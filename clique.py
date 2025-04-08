@@ -157,31 +157,26 @@ class Clique:
 #
 #        return words
 
-    def _two_clique(self):
-        """ clique for when only 2 words are needed """
-        cl = []
-        for i, node in enumerate(self.nodes):
-            ni = node.neighbors
-            self._clique_loop_end(cl, [i], ni)
-        return cl
-
     def _clique_layer_t(self, n: int, prev_idx: list[int], prev_n: set[int], cl: list[list[int]]):
         """ generalizes the clique case to enable n-level clique computation. """
         # error checking
         # ... n must be a non-negative int!
-        if not isinstance(n, int) or n < 0:
-            raise ValueError(
-                f"[***] n must be a non-negative integer! Got: {n}")
+        if not isinstance(n, int) or n < 2:
+            raise ValueError(f"[***] n must be an int larger than 1. Got: {n}")
 
         # ... warn about n being too large
         if n > 8:
             self.logger.warning(
                 "[**] WARNING: n > 8 means you have word length of 2. I recommend not doing this.")
 
+        # handle if n < 3 (i.e., you want a clique of 2 words)
+        if n == 2:
+            self._clique_loop_end(cl, prev_idx, prev_n)
+            return      # no need to execute further. this is a base case!
+
         # now, run through the general algorithm
         for next_idx in prev_n:
-
-            if next_idx < prev_idx[(n-2)-1]:
+            if next_idx < prev_idx[-1]:
                 continue
 
             # remaining candidates will be in intersection:
@@ -189,12 +184,13 @@ class Clique:
 
             # # # BASE CASE # # #
 
-            # if n-2 is 1, then we need to call the loop end
+            # if n-2 is 1 (i.e., n is 3 or lower for robustness), then we need to call the loop end
             # this represents the last "layer" of words to add to the clique.
-            if n-2 == 1:        # or, n == 3
+            if n <= 3:        # or, n <= 3
                 idx_copy = copy.copy(prev_idx)
                 idx_copy.append(next_idx)
                 self._clique_loop_end(cl, idx_copy, next_n)
+                return      # loop is over!
 
             # check if number of neighbors in next_n is large enough
             if len(next_n) < (n-2):
@@ -204,127 +200,6 @@ class Clique:
             idx_copy = copy.copy(prev_idx)
             idx_copy.append(next_idx)
             self._clique_layer_t(n-1, idx_copy, next_n, cl)
-
-    def _three_clique(self):
-        """ clique for when only 3 words are needed """
-        cl = []
-        for i, node in enumerate(self.nodes):
-            ni = node.neighbors
-
-            self._clique_layer_t(
-                n=3,
-                prev_idx=[i],
-                prev_n=ni,
-                cl=cl
-            )
-
-#            for j in ni:
-#                if j < i:
-#                    continue
-#
-#                # the remaining candidates are only the words in the intersection
-#                # of the neighborhood sets of i and j
-#                nij = ni & self.nodes[j].neighbors
-#
-#                # final step
-#                self._clique_loop_end(cl, [i, j], nij)
-        return cl
-
-    def _four_clique(self):
-        """ clique for when only 4 words are needed """
-        cl = []
-        for i, node in enumerate(self.nodes):
-            ni = node.neighbors
-            for j in ni:
-                if j < i:
-                    continue
-
-                # the remaining candidates are only the words in the intersection
-                # of the neighborhood sets of i and j
-                nij = ni & self.nodes[j].neighbors
-
-                # no need to check if it doesn't have enough neighbors
-                if len(nij) < 2:
-                    continue
-                for k in nij:
-                    # start after j
-                    if k < j:
-                        continue
-
-                    # intersect with neighbors of k
-                    nijk = nij & self.nodes[k].neighbors
-
-                    # final step
-                    self._clique_loop_end(cl, [i, j, k], nijk)
-        return cl
-
-    def _five_clique(self):
-        """ clique for when 5 words are needed """
-        cl = []
-        for i, node in enumerate(self.nodes):
-            ni = node.neighbors
-            for j in ni:
-                if j < i:
-                    continue
-                # the remaining candidates are only the words in the intersection
-                # of the neighborhood sets of i and j
-                nij = ni & self.nodes[j].neighbors
-                if len(nij) < 3:
-                    continue
-                for k in nij:
-                    if k < j:
-                        continue
-                    # intersect with neighbors of k
-                    nijk = nij & self.nodes[k].neighbors
-                    if len(nijk) < 2:
-                        continue
-                    for l in nijk:
-                        if l < k:
-                            continue
-                        # intersect with neighbors of l
-                        nijkl = nijk & self.nodes[l].neighbors
-
-                        # final step
-                        if len(nijkl) < 1:
-                            continue
-                        self._clique_loop_end(cl, [i, j, k, l], nijkl)
-        return cl
-
-    def _six_clique(self):
-        """ clique for when 6 words are needed """
-        cl = []
-        for i, node in enumerate(self.nodes):
-            ni = node.neighbors
-            for j in ni:
-                if j < i:
-                    continue
-                # the remaining candidates are only the words in the intersection
-                # of the neighborhood sets of i and j
-                nij = ni & self.nodes[j].neighbors
-                if len(nij) < 4:
-                    continue
-                for k in nij:
-                    if k < j:
-                        continue
-                    # intersect with neighbors of k
-                    nijk = nij & self.nodes[k].neighbors
-                    if len(nijk) < 3:
-                        continue
-                    for l in nijk:
-                        if l < k:
-                            continue
-                        # intersect with neighbors of l
-                        nijkl = nijk & self.nodes[l].neighbors
-                        if len(nijkl) < 2:
-                            continue
-                        for m in nijkl:
-                            if m < l:
-                                continue
-                            nijklm = nijkl & self.nodes[m].neighbors
-
-                            # final step
-                            self._clique_loop_end(cl, [i, j, k, l, m], nijklm)
-        return cl
 
     def _clique_loop_end(self, cl: list[list[int]], prev_idx: list[int], prev_n: set[int]):
         """ represents the final loop, where all clique indexes are aggregated. """
@@ -349,31 +224,20 @@ class Clique:
         -------
         list[list[int]]
             List of cliques. Each entry in this list is a list of words that form the clique.
-            e.g., [["bla", "gou", "fed"], [...], ..., [...]]
+            e.g., [["bla", "gou", "fed", ...], [...], ..., [...]]
         """
 
         # first, determine which clique length must be chosen
-        # example: 26 / 5 = 5.blah -> int(5.blah) -> 5 -> call five_clique
+        # example: 26 / 5 = 5.2 -> int(5.2) -> 5
         num_words = int(self.MAX_LEN / length)
         self.logger.debug("[*] Computing cliques of %d words...", num_words)
 
-        # set up a mapping from count -> clique finder
-        match num_words:
-            case 2:
-                return self._two_clique()
-            case 3:
-                return self._three_clique()
-            case 4:
-                return self._four_clique()
-            case 5:
-                return self._five_clique()
-            case 6:
-                return self._six_clique()
-            case _:
-                return []
-                # self.logger.debug(
-                #    "[*] DEBUG: Defaulting to 5 words in the clique.")
-                # return self._five_clique()
+        cl = []
+        for i, node in enumerate(self.nodes):
+            ni = node.neighbors
+            # call the clique template function with num_words
+            self._clique_layer_t(n=num_words, prev_idx=[i], prev_n=ni, cl=cl)
+        return cl
 
     def _get_word_repr(self):
         """
@@ -403,7 +267,7 @@ if __name__ == "__main__":
     util.check_create_dir(
         OUT_DIR, name="Clique", logger=clique.logger)
 
-    for word_len in range(7, 13):
+    for word_len in range(3, 13):
         clique.compute_cliques(word_len)
 
         # filepath

@@ -162,5 +162,8 @@ cython_debug/
 # VS Code
 .vscode
 
+# words_alpha.txt
+words/words_alpha.txt
+
 # output folders
 Cliques

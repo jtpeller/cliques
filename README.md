@@ -23,12 +23,12 @@ I originally based mine on [Benjamin Paassen's five_clique](https://gitlab.com/b
 Features:
 
 - Clique class, responsible for computing the cliques from a provided word list. Capable of outputting to a CSV file!
-- Graph class, responsible for computing the neighbors of words. Also can be output to a CSV.
+- Graph class, responsible for computing the neighbors of words. Also can be output to a CSV!
 
 ## Future Plans
 
 Some of the future plans / features include:
 
 - Release this on pip, so it may be used in other projects as a module or as a package.
-- Optimize graphs by reading in an existing graph of a known size.
+- Optimize graphs by allowing an existing graph to be read in. Enables a compute-once-use-many scheme.
 - Fuzzy search, for when a clique does not exist in the list. Enables 1 singular overlap in a clique
