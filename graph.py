@@ -13,6 +13,7 @@ import time
 
 # local imports
 from word_node import WordNode
+from util import pop_without_remove as pop_wr
 
 
 class Graph:
@@ -77,8 +78,9 @@ class Graph:
         """
         Computes each node's neighbors. Call this to actually build the graph.
 
-        When fuzzy search is active, allows for additional words to be included, say, if
-        the provided word list does not have a clique.
+        When fuzzy search is active, allows for vowels to overlap, enabling cliques to be found
+        for situations where there otherwise would be no existing cliques (e.g., for a clique 
+        of words with length 3, which requires 8 words, but there are only 5 vowels!).
 
         When fuzzy search is disabled, only strict cliques are found, where all letters are unique
         """
@@ -96,6 +98,8 @@ class Graph:
                 intersection = char_set & j.char_set
                 if len(intersection) == 0:
                     neighbors.add(self._get_word_index(j.word))
+                elif self.fuzzy and len(intersection) == 1 and pop_wr(intersection) in "aeiou":
+                    neighbors.add(self._get_word_index(j.word))
 
         # output
         self.logger.info(
@@ -107,9 +111,7 @@ class Graph:
 
         Default filepath is f'{output_dir}/word_graph-{self.length}.csv
 
-        If fuzzy search, f'{output_dir}/word_graph-{self.length}-fuzzy.csv
-
-        Single line format is: word,[neighbors[0], neighbors[1], ..., neighbors[-1]]
+        Single line format is: word,fuzzy,[neighbors[0], neighbors[1], ..., neighbors[-1]]
 
         Parameters
         ----------
@@ -121,8 +123,6 @@ class Graph:
 
         # setup filename based on fuzziness
         filepath = f'{output_dir}/word_graph-{self.length}.csv'
-        if self.fuzzy:
-            filepath = f'{output_dir}/word_graph-{self.length}-fuzzy.csv'
 
         # open file & write
         self.logger.info('[*] Writing to %s', filepath)
@@ -130,7 +130,7 @@ class Graph:
             writer = csv.writer(f, delimiter=delim)
             for node in self.nodes:
                 writer.writerow(
-                    [node.word, str(list(sorted(node.neighbors)))])
+                    [node.word, self.fuzzy, str(list(sorted(node.neighbors)))])
 
     def _init_nodes(self):
         """ utilizes self.words to populate self.nodes. """
@@ -166,7 +166,7 @@ class Graph:
 
         Returns
         -------
-        int | None
+        int, None
             Returns idx of word if found. None otherwise.
         """
         for idx, node in enumerate(self.nodes):

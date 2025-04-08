@@ -14,7 +14,19 @@ from pathlib import Path
 
 def get_files_from_dir(d: str, ext: str) -> list[str]:
     """
-    Returns a list of all files inside directory $d with extension $ext
+    Returns the list of all files inside directory $d with extension $ext
+
+    Parameters
+    ----------
+    d : str
+        Directory from which to retrieve the file-list.
+    ext : str
+        File extension. Can include the dot ('.txt'), but not required.
+
+    Returns
+    -------
+    list[str]
+        list of file path strings.
     """
     results = []
     for f in os.listdir(d):
@@ -23,50 +35,105 @@ def get_files_from_dir(d: str, ext: str) -> list[str]:
     return results
 
 
+def pop_without_remove(s: set):
+    """
+    Returns the result of s.pop() without actually removing the value from the set.
+
+    Parameters
+    ----------
+    s : set
+        The set to from which to retrieve the value.
+
+    Returns
+    -------
+    Any
+        Type of set element. Value is what would be the hypothetical "s[0]"
+    """
+    for x in s:
+        break
+    return x
+
+
 def check_create_dir(d: str, name: str = None, logger: logging.Logger = None):
     """
     Creates the directory if it doesn't exist. Logs @ info level using $logger.
     If it already exists, logs a debug.
     Name is used for logging; to specify directory's name for users.
 
-    Returns:
-        True if the dir was created, False otherwse.
+    Parameters
+    ----------
+    d : str
+        Directory to check / create.
+    name : str, optional
+        Name of the folder for logging. If None, set to d. By default None
+    logger : logging.Logger, optional
+        logging.Logger to be used for logging, if desired. By default None
+
+    Returns
+    -------
+    bool
+        Whether the directory was created (True) or not (False).
     """
+
     if name is None:
         name = d
-    if not os.path.exists(d):
+    if not Path(d).exists:
         if logger:
             logger.info("[*] Creating %s directory...", name)
-        os.mkdir(d)
+        Path(d).mkdir()
         return True
-    else:
-        if logger:
-            logger.debug(
-                "[*] %s directory already exists.", name.capitalize())
-        return False
+
+    if logger:
+        logger.debug(
+            "[*] %s directory already exists.", name.capitalize())
+    return False
 
 
 def check_dir(d: str):
     """
-    Returns true if $d exists and is a dir. False otherwise.
+    Assess $d and ensure it is an existing directory.
+
+    Parameters
+    ----------
+    d : str
+        Directory path to check.
+
+    Returns
+    -------
+    bool
+        True if $d exists and is a dir. False otherwise.
     """
     return Path(d).exists() and Path(d).is_dir()
 
 
 def read_file(filepath: str):
     """
-    Returns the contents of the .txt file at $filepath line-by-line. Line endings are stripped!
-    Returns: 
-        - List[str] for filepath contents. One line per list entry.
-        - None if file doesn't exist, or is not a .txt file.
+    Reads the file at $filepath line-by-line.
+
+    Parameters
+    ----------
+    filepath : str
+        filepath to read. Can be absolute or relative.
+
+    Returns
+    -------
+    list[str]
+        Contents of the file. Each line is a list entry.
+
+    Raises
+    ------
+    FileNotFoundError
+        If file at the filepath provided does not exist.
+    ValueError
+        If file at the filepath is not a .txt
     """
-    # error checks
-    # ... check exists
+    # error checking
+    # ... exists
     if not Path(filepath).exists():
         raise FileNotFoundError(
             f"[***] ERROR: File {filepath} does not exist.")
 
-    # ... check that it's a text file
+    # ... text file
     if not filepath.endswith(".txt"):
         raise ValueError("[***] ERROR: File must be .txt")
 

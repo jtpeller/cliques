@@ -18,6 +18,9 @@ from graph import Graph
 from word_node import WordNode
 import util
 
+# TODO: docstrings everywhere
+# TODO: figure out how to make this a module / package for pip!
+
 
 class Clique:
     """ Computes cliques using a word graph """
@@ -73,7 +76,7 @@ class Clique:
         g_start = time.time()
         self.logger.info("[*] Computing Graph for length %d...", length)
         self.graph = Graph(words=self.words, length=length,
-                           fuzzy=False, log_level=self.logger.getEffectiveLevel())
+                           fuzzy=self.fuzzy, log_level=self.logger.getEffectiveLevel())
         self.graph.compute_graph()
         self.nodes = self.graph.nodes   # bring it up a level due to laziness
         g_comp = time.time() - g_start
@@ -113,6 +116,9 @@ class Clique:
             return
 
         # generate dict format
+        # TODO: fuzzy searches will include non-fuzzy words. Find a way to infer whether
+        # fuzzy search was used (or rather, needed to be used) from the cliq itself.
+        # This will improve meaning of the "fuzzy" field.
         output: list[dict] = []
         for cliq in self.word_cliques:
             output.append({
@@ -129,33 +135,6 @@ class Clique:
     #########################################
     #           HELPER FUNCTIONS            #
     #########################################
-
-#    def _compute_fuzzy_neighbors(self, words):
-#        """ computes the neighbors of $word """
-#        # compute the 'neighbors' for each word
-#        for node in words:
-#            # extract node attributes.
-#            char_set = node.char_set
-#            neighbors = node.neighbors
-#
-#            # indicates if a word with fuzzy parameters was found already.
-#            fuzzy_found = 0
-#            fuzzy_len_max = 4
-#            fuzzy_found_max = 3
-#
-#            # iterate over all words again
-#            for j, j_node in enumerate(words):
-#                # only add neighbors if they aren't duplicates.
-#                # fuzzy search allows 1 duplicate
-#                intersection = char_set & j_node.char_set
-#                if len(intersection) == 0 \
-#                        or (self.fuzzy
-#                            and len(intersection) <= fuzzy_len_max
-#                            and fuzzy_found < fuzzy_found_max):
-#                    fuzzy_found += 1
-#                    neighbors.add(j)
-#
-#        return words
 
     def _clique_layer_t(self, n: int, prev_idx: list[int], prev_n: set[int], cl: list[list[int]]):
         """ generalizes the clique case to enable n-level clique computation. """
@@ -257,35 +236,35 @@ class Clique:
 if __name__ == "__main__":
     # read in words
     all_words = util.read_file("./words/output.txt")
-
-    # pass into clique for standard search
-    clique = Clique(words=all_words, delim=",")
-    clique_list = []
+    FUZZY_ONLY = True
 
     # set up clique output dir
     OUT_DIR = "./Cliques"
-    util.check_create_dir(
-        OUT_DIR, name="Clique", logger=clique.logger)
+    util.check_create_dir(OUT_DIR)
 
-    for word_len in range(3, 13):
-        clique.compute_cliques(word_len)
+    # pass into clique for standard search
+    if not FUZZY_ONLY:
+        clique = Clique(words=all_words, delim=",")
+        clique_list = []
 
-        # filepath
-        FP = f"{OUT_DIR}/cliques-{word_len}.csv"
-        if clique.fuzzy:
-            FP = f'{OUT_DIR}/cliques-fuzzy-{word_len}.csv'
-        clique.write_cliques(FP)
-        clique_list.append(clique.word_cliques)
-    print(clique_list)
+        for word_len in range(3, 13):
+            clique.compute_cliques(word_len)
+
+            # filepath
+            FP = f"{OUT_DIR}/cliques-{word_len}.csv"
+            if clique.fuzzy:
+                FP = f'{OUT_DIR}/cliques-fuzzy-{word_len}.csv'
+            clique.write_cliques(FP)
+            clique_list.append(clique.word_cliques)
 
     # pass into clique for fuzzy search
-    # clique2 = Clique(words=all_words, delim=",", fuzzy=True)
-    # fuzzy_range = [6, 8, 10, 11, 12]
-    # clique_list2 = []
-    # for word_len in fuzzy_range:
-    #     clique2.compute_cliques(word_len)
-    #     clique2.write_cliques("./cliques")
-    #     clique_list2.append(clique2.cliques)
-    # print(clique_list)
+    else:
+        clique2 = Clique(words=all_words, delim=",", fuzzy=True)
+        fuzzy_range = [3, 6, 8, 10, 11, 12]
+        clique_list2 = []
+        for word_len in fuzzy_range:
+            clique2.compute_cliques(word_len)
+            clique2.write_cliques("./cliques")
+            clique_list2.append(clique2.cliques)
 
     sys.exit(0)
