@@ -6,11 +6,11 @@ Compute n-sized Cliques of words!
 
 - [Cliques](#cliques)
   - [Table of Contents](#table-of-contents)
-  - [Acknowledgements](#acknowledgements)
+  - [Purpose](#purpose)
   - [Features](#features)
   - [Future Plans](#future-plans)
 
-## Acknowledgements
+## Purpose
 
 My verse game is a wordle-like game in which you play against bots. I was writing a bot that would utilize the strategy of cliques to structure its guesses to cover as much of the alphabet as possible before making its "final" guess.
 
@@ -31,4 +31,7 @@ Some of the future plans / features include:
 
 - Release this on pip, so it may be used in other projects as a module or as a package.
 - Optimize graphs by allowing an existing graph to be read in. Enables a compute-once-use-many scheme.
-- Fuzzy search, for when a clique does not exist in the list. Enables 1 singular overlap in a clique
+
+Completed tasks:
+
+- Fuzzy search, for when a clique does not exist in the list. Enables overlap in a clique

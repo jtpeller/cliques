@@ -18,7 +18,6 @@ from graph import Graph
 from word_node import WordNode
 import util
 
-# TODO: docstrings everywhere
 # TODO: figure out how to make this a module / package for pip!
 
 
@@ -29,8 +28,26 @@ class Clique:
     def __init__(self,
                  words: list[str],
                  delim: str = ',',
-                 fuzzy: bool = False,
-                 log_level=logging.DEBUG):
+                 fuzzy: bool = True,
+                 log_level=logging.INFO):
+        """
+        Initializes Clique object.
+
+        Parameters
+        ----------
+        words : list[str]
+            the word list to be used to search for cliques.
+        delim : str, optional
+            CSV delimiter, by default ','
+        fuzzy : bool, optional
+            Whether to fuzzy search or not. 
+            False gives strict cliques only (no repeated letters)
+            True enables vowels to overlap at most once.
+            By default False
+        log_level : int, optional
+            Logging level for Python's logging package.
+            By default logging.INFO
+        """
         # save input values
         self.words = words
         self.fuzzy = fuzzy
@@ -39,8 +56,8 @@ class Clique:
         # setup for later calculations
         self.graph: Graph
         self.nodes: list[WordNode]
-        self.cliques: list[list[int]]
-        self.word_cliques: list[list[str]]
+        self.cliques: list[int]
+        self.word_cliques: list[str]
         self.length: int
 
         # logging
@@ -62,6 +79,11 @@ class Clique:
 
         If no cliques are found, then another method can be used: fuzzy search. 
         This allows some overlap in the cliques.
+
+        Raises
+        ------
+        ValueError
+            If length is not between 1 and 26.
         """
         # error checks
         # ... length is a positive number between 1 and 26.
@@ -106,30 +128,33 @@ class Clique:
 
     def write_cliques(self, filepath: str):
         """
-        Writes every set of cliques to a separate .csv file in $output_dir.
+        Writes this object's cliques to file at CSV. Will overwrite.
 
-        Filename format: {output_dir}/cliques-{length}.csv
-        Fuzzy filename format: {output_dir}/cliques-fuzzy-{length}.csv
+        Parameters
+        ----------
+        filepath : str
+            the filepath to write.
         """
         if len(self.word_cliques) == 0:
             self.logger.debug("[*] Skipping write-to-file. No cliques.")
             return
 
         # generate dict format
-        # TODO: fuzzy searches will include non-fuzzy words. Find a way to infer whether
-        # fuzzy search was used (or rather, needed to be used) from the cliq itself.
-        # This will improve meaning of the "fuzzy" field.
         output: list[dict] = []
         for cliq in self.word_cliques:
+            repeats, missing = self._get_repeats_and_missing(cliq)
             output.append({
-                "clique": cliq,
-                "fuzzy": self.fuzzy
+                "Clique": cliq,
+                "Fuzzy": len(repeats) > 0,
+                "Repeats": repeats,
+                "Missing": missing
             })
         fn = list(output[0].keys())
 
         # open and write.
         with open(filepath, 'w', newline='', encoding='utf-8') as f:
             writer = csv.DictWriter(f, fieldnames=fn, delimiter=self.delim)
+            writer.writeheader()
             writer.writerows(output)
 
     #########################################
@@ -201,9 +226,8 @@ class Clique:
 
         Returns
         -------
-        list[list[int]]
-            List of cliques. Each entry in this list is a list of words that form the clique.
-            e.g., [["bla", "gou", "fed", ...], [...], ..., [...]]
+        list[int]
+            List of cliques. Each entry in this list are the indexes into self.nodes
         """
 
         # first, determine which clique length must be chosen
@@ -217,6 +241,37 @@ class Clique:
             # call the clique template function with num_words
             self._clique_layer_t(n=num_words, prev_idx=[i], prev_n=ni, cl=cl)
         return cl
+
+    def _get_repeats_and_missing(self, words: list[str]) -> tuple[list[str], list[str]]:
+        """
+        Discovers any letters across all the words in $cliq that are repeats.
+        Also computes any omitted letters!
+
+        Parameters
+        ----------
+        cliq : list[str]
+            list of words
+
+        Returns
+        -------
+        list[str]
+            list of repeated letters
+        """
+        # first count up all letters
+        d = dict(zip("abcdefghijklmnopqrstuvwxyz", [0]*26))
+        for word in words:
+            for letter in word:
+                d[letter.lower()] += 1      # frequency count
+
+        # then, create a list of repeated (freq > 1) and missing (freq == 0) letters
+        repeats = []
+        missing = []
+        for k, v in d.items():
+            if v > 1:
+                repeats.append(k)
+            elif v == 0:
+                missing.append(k)
+        return repeats, missing
 
     def _get_word_repr(self):
         """
@@ -239,32 +294,15 @@ if __name__ == "__main__":
     FUZZY_ONLY = True
 
     # set up clique output dir
-    OUT_DIR = "./Cliques"
+    OUT_DIR = "Cliques"
     util.check_create_dir(OUT_DIR)
 
-    # pass into clique for standard search
-    if not FUZZY_ONLY:
-        clique = Clique(words=all_words, delim=",")
-        clique_list = []
+    # compute Cliques!
+    cliques = Clique(words=all_words, delim=",", fuzzy=True)
+    for word_len in range(3, 13):
+        cliques.compute_cliques(word_len)
 
-        for word_len in range(3, 13):
-            clique.compute_cliques(word_len)
-
-            # filepath
-            FP = f"{OUT_DIR}/cliques-{word_len}.csv"
-            if clique.fuzzy:
-                FP = f'{OUT_DIR}/cliques-fuzzy-{word_len}.csv'
-            clique.write_cliques(FP)
-            clique_list.append(clique.word_cliques)
-
-    # pass into clique for fuzzy search
-    else:
-        clique2 = Clique(words=all_words, delim=",", fuzzy=True)
-        fuzzy_range = [3, 6, 8, 10, 11, 12]
-        clique_list2 = []
-        for word_len in fuzzy_range:
-            clique2.compute_cliques(word_len)
-            clique2.write_cliques("./cliques")
-            clique_list2.append(clique2.cliques)
+        FP = f'{OUT_DIR}/cliques-{word_len}.csv'
+        cliques.write_cliques(FP)
 
     sys.exit(0)

@@ -49,6 +49,8 @@ def pop_without_remove(s: set):
     Any
         Type of set element. Value is what would be the hypothetical "s[0]"
     """
+    if not isinstance(s, set) or len(s) <= 0:
+        return None
     for x in s:
         break
     return x
@@ -77,15 +79,16 @@ def check_create_dir(d: str, name: str = None, logger: logging.Logger = None):
 
     if name is None:
         name = d
-    if not Path(d).exists:
+
+    if not os.path.exists(d):
         if logger:
             logger.info("[*] Creating %s directory...", name)
-        Path(d).mkdir()
+        os.mkdir(d)
         return True
 
     if logger:
         logger.debug(
-            "[*] %s directory already exists.", name.capitalize())
+            "[*] %s directory already exists.", name)
     return False
 
 

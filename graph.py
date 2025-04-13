@@ -86,11 +86,18 @@ class Graph:
         """
         start = time.time()
 
+        # max fuzzy count per node
+        max_fuzzy = 3
+
         # compute neighbors for each word; other words which have distinct letters
         for node in self.nodes:
             # extract node attributes.
             char_set = node.char_set
             neighbors = node.neighbors
+
+            # count how many fuzzy interactions
+            n_fuzzy = 0
+            vowels_left = "aeiou"
 
             # iterate over all words again
             for j in self.nodes:
@@ -98,8 +105,13 @@ class Graph:
                 intersection = char_set & j.char_set
                 if len(intersection) == 0:
                     neighbors.add(self._get_word_index(j.word))
-                elif self.fuzzy and len(intersection) == 1 and pop_wr(intersection) in "aeiou":
+                elif self.fuzzy \
+                        and len(intersection) == 1 \
+                        and pop_wr(intersection) in vowels_left \
+                        and n_fuzzy < max_fuzzy:
                     neighbors.add(self._get_word_index(j.word))
+                    vowels_left.replace(pop_wr(intersection), "")
+                    n_fuzzy += 1
 
         # output
         self.logger.info(
