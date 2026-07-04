@@ -1,0 +1,28 @@
+# Defines the requirements and project details necessary for publishing.
+
+### UV BUILD SYSTEM
+
+[build-system]
+requires = ["uv_build >= 0.11.23, <0.12.0"]
+build-backend = "uv_build"
+
+### PROJECT CONFIGURATION
+
+[project]
+name = "cliques"
+version = "0.0.1"
+description = "Compute n-sized Cliques of words!"
+requires-python = ">= 3.11"
+readme = {file = "README.md", content-type = "text/markdown"}
+licesne = "GNU GPLv3"
+license-files = ["LICENSE"]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Programming Language :: Python"
+]
+
+### UV CONFIGURATION
+
+[tool.uv.build-backend]
+module-name = "cliques"
+module-root = ""

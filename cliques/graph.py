@@ -1,19 +1,21 @@
 """
-graph.py
+Description
+-----------
+Implementation for the Graph class
 
-Desc:       Implementation for the Graph class
-Author:     jtpeller
-Date:       2025.04.01
+Metadata
+--------
+- Date: 2025.04.01
 """
 
-# standard imports
+# Standard
 import csv
 import logging
 import time
 
-# local imports
-from word_node import WordNode
-from util import pop_without_remove as pop_wr
+# Local
+from cliques.util import CliqueUtils
+from cliques.word_node import WordNode
 
 
 class Graph:
@@ -21,11 +23,13 @@ class Graph:
     Graph data structure.
     """
 
-    def __init__(self,
-                 words: list[str],
-                 length: int,
-                 fuzzy: bool = False,
-                 log_level: int = logging.INFO):
+    def __init__(
+        self,
+        words: list[str],
+        length: int,
+        fuzzy: bool = False,
+        log_level: int = logging.INFO,
+    ):
         """
         Constructs and partially initializes a Graph.
 
@@ -34,7 +38,7 @@ class Graph:
         words : list[str]
             List of words. Should be same length, and stripped (not required).
         length : int
-            Length of the words from the list to be computed. 
+            Length of the words from the list to be computed.
             Allows providing a list of words with variable length, but only want to compute
             those with length 5, for instance.
         fuzzy : bool, optional
@@ -79,7 +83,7 @@ class Graph:
         Computes each node's neighbors. Call this to actually build the graph.
 
         When fuzzy search is active, allows for vowels to overlap, enabling cliques to be found
-        for situations where there otherwise would be no existing cliques (e.g., for a clique 
+        for situations where there otherwise would be no existing cliques (e.g., for a clique
         of words with length 3, which requires 8 words, but there are only 5 vowels!).
 
         When fuzzy search is disabled, only strict cliques are found, where all letters are unique
@@ -105,17 +109,22 @@ class Graph:
                 intersection = char_set & j.char_set
                 if len(intersection) == 0:
                     neighbors.add(self._get_word_index(j.word))
-                elif self.fuzzy \
-                        and len(intersection) == 1 \
-                        and pop_wr(intersection) in vowels_left \
-                        and n_fuzzy < max_fuzzy:
+                elif (
+                    self.fuzzy
+                    and len(intersection) == 1
+                    and CliqueUtils.pop_without_remove(intersection) in vowels_left
+                    and n_fuzzy < max_fuzzy
+                ):
                     neighbors.add(self._get_word_index(j.word))
-                    vowels_left.replace(pop_wr(intersection), "")
+                    vowels_left.replace(
+                        CliqueUtils.pop_without_remove(intersection), ""
+                    )
                     n_fuzzy += 1
 
         # output
         self.logger.info(
-            '[*] Graph creation complete in %.3f seconds', time.time() - start)
+            "[*] Graph creation complete in %.3f seconds", time.time() - start
+        )
 
     def write_graphs(self, output_dir: str, delim: str = ","):
         """
@@ -134,18 +143,19 @@ class Graph:
         """
 
         # setup filename based on fuzziness
-        filepath = f'{output_dir}/word_graph-{self.length}.csv'
+        filepath = f"{output_dir}/word_graph-{self.length}.csv"
 
         # open file & write
-        self.logger.info('[*] Writing to %s', filepath)
-        with open(filepath, 'w', newline='', encoding='utf-8') as f:
+        self.logger.info("[*] Writing to %s", filepath)
+        with open(filepath, "w", newline="", encoding="utf-8") as f:
             writer = csv.writer(f, delimiter=delim)
             for node in self.nodes:
                 writer.writerow(
-                    [node.word, self.fuzzy, str(list(sorted(node.neighbors)))])
+                    [node.word, self.fuzzy, str(list(sorted(node.neighbors)))]
+                )
 
     def _init_nodes(self):
-        """ utilizes self.words to populate self.nodes. """
+        """Utilizes self.words to populate self.nodes."""
 
         # loop over every word
         for word in self.words:
@@ -164,8 +174,7 @@ class Graph:
                 continue
 
             # append the WordNode. Empty set since neighbors is computed later
-            self.nodes.append(
-                WordNode(word=word, neighbors=set(), char_set=char_set))
+            self.nodes.append(WordNode(word=word, neighbors=set(), char_set=char_set))
 
     def _get_word_index(self, word: str):
         """
@@ -174,7 +183,7 @@ class Graph:
         Parameters
         ----------
         word : str
-            word to lookup.
+            Word to lookup.
 
         Returns
         -------
